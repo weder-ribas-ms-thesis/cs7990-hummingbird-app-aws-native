@@ -6,6 +6,10 @@ const {
   MAX_FILE_SIZE,
   CUSTOM_FORMIDABLE_ERRORS,
 } = require('../core/constants.js');
+const { publishMetric } = require('../clients/cloudwatch.js');
+const { getLogger } = require('../logger.js');
+
+const logger = getLogger();
 
 /**
  * Uploads a media file to AWS S3 in a streaming fashion.
@@ -95,12 +99,20 @@ const uploadMedia = async (req) => {
         };
       });
 
-      form.on('error', (error) => {
+      form.on('error', async (error) => {
+        await publishUploadMetric({
+          metricName: 'media.upload.failure',
+          value: 1,
+        });
         reject(error);
       });
 
-      form.on('data', (data) => {
+      form.on('data', async (data) => {
         if (data.event === 'done') {
+          await publishUploadMetric({
+            metricName: 'media.upload.success',
+            value: 1,
+          });
           resolve({ mediaId, file: data.file.toJSON() });
         }
       });
@@ -108,6 +120,34 @@ const uploadMedia = async (req) => {
       reject(error);
     }
   });
+};
+
+/**
+ * Publishes the media upload metric to CloudWatch.
+ * @param {string} metricName
+ * @param {double} value
+ * @returns {Promise<void>}
+ */
+const publishUploadMetric = async ({ metricName, value }) => {
+  try {
+    await publishMetric({
+      payload: [
+        {
+          MetricName: metricName,
+          Unit: 'Count',
+          Value: value,
+          Dimensions: [
+            {
+              Name: 'environment',
+              Value: process.env.NODE_ENV,
+            },
+          ],
+        },
+      ],
+    });
+  } catch (error) {
+    logger.error('Failed to publish media upload metric', error);
+  }
 };
 
 module.exports = { uploadMedia };
