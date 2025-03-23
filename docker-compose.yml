@@ -1,0 +1,19 @@
+services:
+  localstack:
+    container_name: localstack
+    image: localstack/localstack-pro
+    ports:
+      - '127.0.0.1:4566:4566'
+      - '127.0.0.1:4510-4559:4510-4559'
+      - '127.0.0.1:443:443'
+    environment:
+      - DEBUG=1
+      - IAM_SOFT_MODE=1
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:?}
+      - LOCALSTACK_DEBUG=${LOCALSTACK_DEBUG:-0}
+      - LOCALSTACK_PERSISTENCE=${LOCALSTACK_PERSISTENCE:-0}
+      - LS_LOG=${LS_LOG:-error}
+      - GATEWAY_LISTEN=:4566,:80,:443
+    volumes:
+      - '${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack'
+      - '/var/run/docker.sock:/var/run/docker.sock'
