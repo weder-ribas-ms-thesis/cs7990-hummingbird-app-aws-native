@@ -1,5 +1,6 @@
 const flow = require('lodash/flow.js');
-const { getLogger } = require('./logger');
+const { getLogger } = require('./logger.js');
+const { publishMetric } = require('./clients/cloudwatch.js');
 
 const logger = getLogger();
 
@@ -37,4 +38,47 @@ const getMediaId = (s3Key) => {
   return keyArray[1];
 };
 
-module.exports = { withLogging, getMediaId };
+/**
+ * Publishes a metric to CloudWatch.
+ * @param {string} metricName
+ * @param {double} value
+ * @param {scope} scope
+ * @param {string} reason
+ * @returns {Promise<void>}
+ */
+const publishGenericMetric = async ({
+  metricName,
+  value,
+  scope,
+  reason = 'unknown',
+}) => {
+  try {
+    await publishMetric({
+      payload: [
+        {
+          MetricName: metricName,
+          Unit: 'Count',
+          Value: value,
+          Dimensions: [
+            {
+              Name: 'environment',
+              Value: process.env.NODE_ENV,
+            },
+            {
+              Name: 'reason',
+              Value: reason,
+            },
+            {
+              Name: 'scope',
+              Value: scope,
+            },
+          ],
+        },
+      ],
+    });
+  } catch (error) {
+    logger.error('Failed to publish media upload metric', error);
+  }
+};
+
+module.exports = { withLogging, getMediaId, publishGenericMetric };

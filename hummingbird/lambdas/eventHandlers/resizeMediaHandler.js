@@ -1,12 +1,18 @@
 const sharp = require('sharp');
 const { ConditionalCheckFailedException } = require('@aws-sdk/client-dynamodb');
-const { getLogger } = require('../logger');
-const { setMediaStatusConditionally } = require('../clients/dynamodb.js');
+const { getLogger } = require('../logger.js');
+const {
+  setMediaStatusConditionally,
+  setMediaStatus,
+} = require('../clients/dynamodb.js');
 const { getMediaFile, uploadMediaToStorage } = require('../clients/s3.js');
 const { MEDIA_STATUS } = require('../constants.js');
-const { setMediaStatus } = require('../clients/dynamodb');
+const { publishGenericMetric } = require('../common.js');
+const { METRICS } = require('../constants.js');
 
 const logger = getLogger();
+
+const cwMetricScope = 'resizeMedia';
 
 /**
  * Resize a media file to the specified width.
@@ -36,12 +42,10 @@ const resizeMediaHandler = async ({ mediaId, width }) => {
 
     logger.info('Got media file');
 
-    const mediaProcessingStart = performance.now();
     const resizedImage = await resizeImageWithSharp({
       imageBuffer: image,
       width,
     });
-    const mediaProcessingEnd = performance.now();
 
     logger.info('Resized media');
 
@@ -61,11 +65,25 @@ const resizeMediaHandler = async ({ mediaId, width }) => {
     });
 
     logger.info(`Resized media ${mediaId}.`);
+
+    await publishGenericMetric({
+      metricName: METRICS.MEDIA_ASYNC_PROCESSING_SUCCESS,
+      scope: cwMetricScope,
+      value: 1,
+    });
   } catch (error) {
     if (error instanceof ConditionalCheckFailedException) {
       logger.error(
         `Media ${mediaId} not found or status is not ${MEDIA_STATUS.PROCESSING}.`
       );
+
+      await publishGenericMetric({
+        metricName: METRICS.MEDIA_ASYNC_PROCESSING_FAILURE,
+        scope: cwMetricScope,
+        reason: 'CONDITIONAL_CHECK_FAILURE',
+        value: 1,
+      });
+
       throw error;
     }
 
@@ -75,6 +93,13 @@ const resizeMediaHandler = async ({ mediaId, width }) => {
     });
 
     logger.error(`Failed to resize media ${mediaId}`, error);
+
+    await publishGenericMetric({
+      metricName: METRICS.MEDIA_ASYNC_PROCESSING_FAILURE,
+      scope: cwMetricScope,
+      value: 1,
+    });
+
     throw error;
   }
 };

@@ -101,7 +101,7 @@ const uploadMedia = async (req) => {
 
       form.on('error', async (error) => {
         await publishUploadMetric({
-          metricName: 'media.upload.failure',
+          metricName: 'MediaUploadFailure',
           value: 1,
         });
         reject(error);
@@ -110,7 +110,7 @@ const uploadMedia = async (req) => {
       form.on('data', async (data) => {
         if (data.event === 'done') {
           await publishUploadMetric({
-            metricName: 'media.upload.success',
+            metricName: 'MediaUploadSuccess',
             value: 1,
           });
           resolve({ mediaId, file: data.file.toJSON() });
@@ -125,7 +125,7 @@ const uploadMedia = async (req) => {
 /**
  * Publishes the media upload metric to CloudWatch.
  * @param {string} metricName
- * @param {double} value
+ * @param {number} value
  * @returns {Promise<void>}
  */
 const publishUploadMetric = async ({ metricName, value }) => {

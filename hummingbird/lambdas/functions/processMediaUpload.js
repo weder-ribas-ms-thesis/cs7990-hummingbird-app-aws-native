@@ -1,6 +1,10 @@
 const sharp = require('sharp');
 const { ConditionalCheckFailedException } = require('@aws-sdk/client-dynamodb');
-const { getMediaId, withLogging } = require('../common.js');
+const {
+  getMediaId,
+  withLogging,
+  publishGenericMetric,
+} = require('../common.js');
 const {
   setMediaStatus,
   setMediaStatusConditionally,
@@ -8,9 +12,13 @@ const {
 const { getMediaFile, uploadMediaToStorage } = require('../clients/s3.js');
 const { MEDIA_STATUS } = require('../constants.js');
 const { init: initializeLogger, getLogger } = require('../logger.js');
+const { publishMetric } = require('../clients/cloudwatch.js');
+const { METRICS } = require('../constants.js');
 
 initializeLogger({ service: 'processMediaUploadLambda' });
 const logger = getLogger();
+
+const cwMetricScope = 'processMedia';
 
 /**
  * Gets the handler for the processMediaUpload Lambda function.
@@ -67,11 +75,25 @@ const getHandler = () => {
       });
 
       logger.info(`Done processing media ${mediaId}.`);
+
+      await publishGenericMetric({
+        metricName: METRICS.MEDIA_ASYNC_PROCESSING_SUCCESS,
+        scope: cwMetricScope,
+        value: 1,
+      });
     } catch (error) {
       if (error instanceof ConditionalCheckFailedException) {
         logger.error(
           `Media ${mediaId} not found or status is not ${MEDIA_STATUS.PROCESSING}.`
         );
+
+        await publishGenericMetric({
+          metricName: METRICS.MEDIA_ASYNC_PROCESSING_FAILURE,
+          scope: cwMetricScope,
+          reason: 'CONDITIONAL_CHECK_FAILURE',
+          value: 1,
+        });
+
         throw error;
       }
 
@@ -81,6 +103,13 @@ const getHandler = () => {
       });
 
       logger.error(`Failed to process media ${mediaId}`, error);
+
+      await publishGenericMetric({
+        metricName: METRICS.MEDIA_ASYNC_PROCESSING_FAILURE,
+        scope: cwMetricScope,
+        value: 1,
+      });
+
       throw error;
     }
   };

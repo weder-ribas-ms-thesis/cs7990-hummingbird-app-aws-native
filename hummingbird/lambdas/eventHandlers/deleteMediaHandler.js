@@ -1,9 +1,13 @@
 const { deleteMedia } = require('../clients/dynamodb.js');
 const { deleteMediaFile } = require('../clients/s3.js');
 const { MEDIA_STATUS } = require('../constants.js');
-const { getLogger } = require('../logger');
+const { getLogger } = require('../logger.js');
+const { publishGenericMetric } = require('../common.js');
+const { METRICS } = require('../constants.js');
 
 const logger = getLogger();
+
+const cwMetricScope = 'deleteMedia';
 
 /**
  * Delete media from storage.
@@ -27,20 +31,32 @@ const deleteMediaHandler = async ({ mediaId }) => {
       return;
     }
 
-    await deleteMediaFile({ mediaId, mediaName });
+    await deleteMediaFile({ mediaId, mediaName, keyPrefix: 'uploads' });
 
-    if (status !== MEDIA_STATUS.PROCESSING) {
-      const keyPrefix = status === MEDIA_STATUS.ERROR ? 'uploads' : 'resized';
+    if (status === MEDIA_STATUS.COMPLETE) {
       await deleteMediaFile({
         mediaId,
         mediaName,
-        keyPrefix,
+        keyPrefix: 'resized',
       });
     }
 
     logger.info(`Deleted media with id ${mediaId}.`);
+
+    await publishGenericMetric({
+      metricName: METRICS.MEDIA_ASYNC_PROCESSING_SUCCESS,
+      scope: cwMetricScope,
+      value: 1,
+    });
   } catch (error) {
     logger.error(`Error while deleting media with id ${mediaId}.`, error);
+
+    await publishGenericMetric({
+      metricName: METRICS.MEDIA_ASYNC_PROCESSING_FAILURE,
+      scope: cwMetricScope,
+      value: 1,
+    });
+
     throw error;
   }
 };
