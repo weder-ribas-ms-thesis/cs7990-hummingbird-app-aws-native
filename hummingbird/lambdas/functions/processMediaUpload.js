@@ -12,7 +12,6 @@ const {
 const { getMediaFile, uploadMediaToStorage } = require('../clients/s3.js');
 const { MEDIA_STATUS } = require('../constants.js');
 const { init: initializeLogger, getLogger } = require('../logger.js');
-const { publishMetric } = require('../clients/cloudwatch.js');
 const { METRICS } = require('../constants.js');
 
 initializeLogger({ service: 'processMediaUploadLambda' });
