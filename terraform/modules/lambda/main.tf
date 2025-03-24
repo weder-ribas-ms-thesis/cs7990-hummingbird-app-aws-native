@@ -234,6 +234,7 @@ resource "aws_lambda_function" "manage_media" {
     variables = {
       MEDIA_BUCKET_NAME         = var.media_s3_bucket_name
       MEDIA_DYNAMODB_TABLE_NAME = var.dynamodb_table_name
+      NODE_ENV                  = "production"
     }
   }
 
@@ -330,6 +331,7 @@ resource "aws_lambda_function" "process_media" {
     variables = {
       MEDIA_BUCKET_NAME         = var.media_s3_bucket_name
       MEDIA_DYNAMODB_TABLE_NAME = var.dynamodb_table_name
+      NODE_ENV                  = "production"
     }
   }
 

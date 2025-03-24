@@ -159,6 +159,16 @@ data "aws_iam_policy_document" "ecs_iam_role_policy" {
   }
 
   statement {
+    sid    = "CloudWatchMetrics"
+    effect = "Allow"
+    actions = [
+      "cloudwatch:PutMetricData",
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
     sid    = "XRayWrite"
     effect = "Allow"
     actions = [
