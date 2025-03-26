@@ -5,7 +5,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic" {
   description       = "Allow HTTP traffic from the Internet"
   from_port         = 80
   to_port           = 80
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = "172.218.246.227/32"
   ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
