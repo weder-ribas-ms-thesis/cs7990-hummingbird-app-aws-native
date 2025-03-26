@@ -1,5 +1,14 @@
 # cs7990-master-thesis
 
+## Note
+
+This experiment contrasts with the
+[OpenTelemetry-based experiment](https://github.com/weder-ribas-ms-thesis/cs7990-hummingbird-app/tree/main), as it uses
+native AWS observability tools such as CloudWatch and X-Ray. This is the only implementation difference. The application
+functionality is similar.
+
+## Introduction
+
 Monorepo for all code created during the development of Weder's Computer Sciences master thesis.
 
 The Hummingbird app is an experiment created to explore the feasibility to implement a fairly complex distributed system
@@ -24,12 +33,12 @@ choice for this experiment.
 Additionally, as every software system is a closed system, that is: one's ability to infer the state of a software
 system is proportionally related to the systems capacity to emit useful telemetry. Telemetry is the broad definition for
 all possible signals emitted from a system. Example of telemetry are: logs, traces, and metrics. Weder's research
-interest lies in the intersection of software understandability, complexity management, and development experience.
-Therefore, this experiment also implements [OpenTelemetry](https://opentelemetry.io/docs/) as the telemetry framework of
-choice.
+interest lies in the intersection of software understandability, complexity management, and development experience. This
+experiment adopts native AWS observability solutions, such as AWS CloudWatch and X-Ray, validating LocalStack's
+integration with these tools.
 
 This experiment aims to validate the feasibility of implementing a fully functional system, powered by LocalStack
-emulation, made observable with OpenTelemetry instrumentation.
+emulation, made observable with AWS CloudWatch and X-Ray instrumentation.
 
 # The Hummingbird App
 
@@ -115,9 +124,10 @@ from leangaurav.
 
 # Getting Started
 
-## Configure Local Environment 
+## Configure Local Environment
 
-Run the command below to create the required environment/secret files, initialize the Terraform workspaces, and other needed
+Run the command below to create the required environment/secret files, initialize the Terraform workspaces, and other
+needed
 configurations.
 
 Environment-specific files ignored by Git and won't be included in the repository.
@@ -144,19 +154,6 @@ similar to this one:
 ```
 INFO --- [  MainThread] l.p.c.b.licensingv2        : Successfully activated cached license ...
 ```
-
-## Grafana Cloud
-
-**Note:** only applicable if deploying to AWS. Skip this step if deploying only to LocalStack.
-
-This project uses Grafana as the observability backend. When deploying to AWS, telemetry will be forwarded to Grafana
-Cloud using the OTLP connection.
-
-Follow [this guide](https://grafana.com/docs/grafana-cloud/monitor-applications/application-observability/collector/opentelemetry-collector/)
-to configure the OpenTelemetry Collector connection.
-
-Replace both `grafana_cloud_api_key` and `grafana_cloud_instance_id` temporary values in `terraform/.secret.tfvars` with
-the respective values obtained from the guide above.
 
 ## API Docs
 
@@ -185,13 +182,3 @@ make stop
 ```
 
 Explore the `Makefile` for all other available commands.
-
-## Visualizing OpenTelemetry Signals
-
-This projects uses Grafana as the telemetry backend. For
-localhost, [docker-otel-lgtm](https://github.com/grafana/docker-otel-lgtm) is utilized.
-
-Once the application started, perform several requests to generate enough telemetry. Then, access http://localhost:3000
-to visualize the telemetry in a locally hosted Grafana instance.
-
-![An screenshot from the Grafana UI showing a table with OpenTelemetry traces.](images/grafana-traces-screenshot.png)
