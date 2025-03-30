@@ -111,7 +111,7 @@ data "aws_iam_policy_document" "lambda_iam_policy_document" {
 }
 
 resource "aws_iam_policy" "lambda_iam_policy" {
-  name        = "hummigbird-lambda-policy"
+  name        = "hummingbird-lambda-policy"
   path        = "/"
   description = "IAM policy for Hummingbird lambda functions"
   policy      = data.aws_iam_policy_document.lambda_iam_policy_document.json
@@ -119,7 +119,7 @@ resource "aws_iam_policy" "lambda_iam_policy" {
   tags = merge(
     var.additional_tags,
     {
-      Name = "hummigbird-lambda-policy"
+      Name = "hummingbird-lambda-policy"
     }
   )
 }
